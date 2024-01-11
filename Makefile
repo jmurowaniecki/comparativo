@@ -7,8 +7,13 @@ STRING = "$(BOLD)%-10s$(/BOLD)%s\n"
 HELP   = sed -E 's/(`.*`)/\\e[1m\1\\e[0m/'
 
 SERVICES = \
+	golang \
 	python \
-	bash
+	bash \
+	ruby \
+	node \
+	perl \
+	php
 
 DEFAULT: help
 
