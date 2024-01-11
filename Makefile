@@ -6,7 +6,29 @@
 STRING = "$(BOLD)%-10s$(/BOLD)%s\n"
 HELP   = sed -E 's/(`.*`)/\\e[1m\1\\e[0m/'
 
+SERVICES = \
+	bash
+
 DEFAULT: help
+
+build: $(addprefix build-,$(SERVICES)) # Build all solutions.
+
+build-all: build # Build all solutions.
+
+#
+build-%: # Build solution.
+	@mkdir -p ./log && \
+	[ ! -d "stack/$(*)" ] && exit 0; \
+	time \
+		--output=./log/building.$(*) \
+			docker build --force-rm \
+				-t testing-$(*) \
+				-f ./stack/$(*)/Dockerfile \
+				"""./stack/$(*)"""
+
+
+clear: # Clear log files.
+	@rm -Rf ./log
 
 #
 help: # Show this help.
