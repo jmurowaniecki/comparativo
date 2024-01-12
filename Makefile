@@ -55,7 +55,8 @@ show-clear:
 	@rm -Rf Table.tmp
 
 show-version-%: # Show container versions.
-	@(echo -n "$(*) | " && \
+	@\
+	(echo -n "$(*) | " && \
 	docker run --rm \
 		-v .:/app \
 		-it testing-$(*) \
@@ -63,7 +64,8 @@ show-version-%: # Show container versions.
 	)>> Versions.tmp
 
 show-sizes: # Show container/image sizes.
-	@(docker image list \
+	@\
+	(docker image list \
 		--format "{{.Repository}} | {{.Tag}} | {{.Size}}" \
 	)>> Sizes.tmp
 
@@ -99,24 +101,36 @@ show-running-times: $(addprefix show-running-time-,$(SERVICES))
 
 show-all: \
 	show-clear \
-	show-versions \
+	show-image \
 	show-sizes \
 	show-build-times \
 	show-running-times
 
 show-table: show-all # Build information table with versions/sizes.
-	@while read -r line; \
-	do stack=$$(echo $$line | awk '{print($$1)}'); \
-	size=$$(grep "$$stack" Sizes.tmp); \
-	build=$$(cat Build.$$stack.tmp); \
-	running=$$(cat Running.$$stack.tmp); \
-	echo "$$line | $$size | $$build | $$running " | sed -E 's/\r//' >> Table.tmp; \
+	@\
+	while read -r line; \
+	do \
+	stack=$$(echo "$$line" | awk '{print($$1)}'); \
+	sizes=$$(grep "$$stack" Sizes.tmp          ); \
+	times=$$(wc -l "log/running.$$stack"       ); \
+	build=$$(cat """Build"""."""$$stack.tmp"   ); \
+	execs=$$(cat """Running"".""$$stack.tmp"   ); \
+	first=$$(head  "log/running.$$stack" -n 1  ); \
+	times=$$(echo "$$times" | cut -d ' ' -f 1  ); \
+	first=$$(echo "$$first" | sed -E 's/\;/+/g'); \
+	first=$$(echo "scale=3;  $$first"| bc      ); \
+	echo "$$line | $$sizes | $$build | $$first | $$execs | $$times" | sed -E 's/\r//' >> Table.tmp; \
 	done < Versions.tmp
 
-show-versions: $(addprefix show-version-,$(SERVICES)) # Show all container versions
+show-image: $(addprefix show-version-,$(SERVICES)) # Show all container versions
 
 clear: # Clear log and temporary files.
 	@rm -Rf ./log *.tmp
+
+all: \
+	clear \
+	build-all \
+	execute
 
 #
 help: # Show this help.
